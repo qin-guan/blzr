@@ -1,4 +1,3 @@
-@using System.Globalization
 @implements IAsyncDisposable
 @inject IJSRuntime JS
 
@@ -10,8 +9,8 @@
         <section class="topbar">
             <div class="clock-card">
                 <div class="clock-room">@Room.Name</div>
-                <div class="clock-time">@CurrentTime.ToString("HH:mm:ss", CultureInfo.CurrentCulture)</div>
-                <div class="clock-date">@CurrentTime.ToString("dddd, d MMMM yyyy", CultureInfo.CurrentCulture)</div>
+                <div class="clock-time"></div>
+                <div class="clock-date"></div>
             </div>
 
             @if (state.LaterActivities.Count > 0)
