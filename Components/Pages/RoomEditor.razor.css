@@ -1,0 +1,262 @@
+.editor-page {
+    min-height: 100vh;
+    padding: clamp(1rem, 2vw, 1.8rem);
+    display: grid;
+    gap: 1rem;
+}
+
+.editor-header,
+.editor-panel {
+    border-radius: 24px;
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid rgba(19, 32, 38, 0.08);
+    box-shadow: var(--shadow);
+}
+
+.editor-header {
+    padding: clamp(1.4rem, 2vw, 2rem);
+    display: flex;
+    align-items: start;
+    justify-content: space-between;
+    gap: 1.2rem;
+}
+
+.editor-header-copy h1 {
+    margin: 0.35rem 0 0.7rem;
+    font-size: clamp(2rem, 3.2vw, 3.4rem);
+    line-height: 0.95;
+    letter-spacing: -0.04em;
+}
+
+.editor-header-copy p {
+    margin: 0;
+    max-width: 48rem;
+    color: #4f6069;
+    line-height: 1.6;
+}
+
+.editor-header-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.editor-banner-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+}
+
+.editor-layout {
+    display: grid;
+    grid-template-columns: minmax(20rem, 0.9fr) minmax(20rem, 1.1fr);
+    gap: 1rem;
+}
+
+.editor-panel {
+    padding: 1.25rem;
+    display: grid;
+    gap: 1rem;
+    align-content: start;
+}
+
+.panel-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: start;
+    gap: 1rem;
+}
+
+.panel-heading h2 {
+    margin: 0;
+    font-size: 1.35rem;
+    line-height: 1.05;
+}
+
+.panel-eyebrow {
+    margin: 0 0 0.35rem;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-weight: 760;
+    color: var(--muted);
+}
+
+.sync-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    border-radius: 999px;
+    padding: 0.45rem 0.8rem;
+    background: #e8f6ef;
+    color: #1d6a43;
+    font-size: 0.88rem;
+    font-weight: 760;
+}
+
+.room-name-form,
+.activity-form {
+    display: grid;
+    gap: 1rem;
+}
+
+.field-stack {
+    display: grid;
+    gap: 0.45rem;
+}
+
+.field-label {
+    font-size: 0.88rem;
+    font-weight: 720;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+}
+
+.link-list {
+    display: grid;
+    gap: 0.85rem;
+}
+
+.link-item {
+    display: grid;
+    gap: 0.4rem;
+}
+
+.link-item code {
+    display: block;
+    border-radius: 14px;
+    background: #f6fafc;
+    border: 1px solid rgba(19, 32, 38, 0.08);
+    padding: 0.8rem 0.9rem;
+    overflow: auto;
+    color: #36505d;
+}
+
+.activity-list {
+    display: grid;
+    gap: 0.8rem;
+    max-height: 62vh;
+    overflow: auto;
+    padding-right: 0.2rem;
+}
+
+.activity-list-item {
+    border-radius: 18px;
+    border: 1px solid #d8e0e4;
+    background: linear-gradient(180deg, #ffffff, #f9fbfc);
+    padding: 1rem;
+    display: grid;
+    gap: 0.7rem;
+}
+
+.activity-list-item.active {
+    border-color: #a7cad7;
+    box-shadow: inset 0 0 0 2px #dbeef5;
+}
+
+.activity-list-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: start;
+    gap: 1rem;
+}
+
+.activity-list-top h3 {
+    margin: 0;
+    font-size: 1.08rem;
+    line-height: 1.15;
+}
+
+.activity-list-time,
+.activity-list-meta {
+    margin: 0;
+    color: #51616a;
+}
+
+.activity-list-time {
+    font-weight: 650;
+    font-variant-numeric: tabular-nums;
+    margin-top: 0.35rem;
+}
+
+.mini-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.mini-button {
+    appearance: none;
+    border: 1px solid #d2dbe0;
+    border-radius: 999px;
+    background: #ffffff;
+    color: #34515e;
+    font: inherit;
+    font-size: 0.9rem;
+    font-weight: 700;
+    padding: 0.5rem 0.8rem;
+    cursor: pointer;
+}
+
+.mini-button.danger {
+    color: #8d3f3f;
+    border-color: #e6c7c7;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+}
+
+.field-full {
+    grid-column: 1 / -1;
+}
+
+.json-help {
+    margin: 0;
+    color: #50616a;
+    line-height: 1.55;
+}
+
+.json-editor {
+    width: 100%;
+    min-height: 30rem;
+    resize: vertical;
+    border: 1px solid #c9d6dc;
+    border-radius: 18px;
+    padding: 1rem 1.05rem;
+    font: 500 0.98rem/1.55 Consolas, "SFMono-Regular", Menlo, monospace;
+    color: var(--text);
+    background: #ffffff;
+}
+
+.empty-editor-state {
+    border-radius: 18px;
+    border: 1px dashed rgba(80, 97, 106, 0.3);
+    padding: 1.2rem;
+    color: #51616a;
+    background: rgba(248, 251, 252, 0.8);
+}
+
+@media (max-width: 1100px) {
+    .editor-banner-grid,
+    .editor-layout {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 760px) {
+    .editor-header {
+        flex-direction: column;
+    }
+
+    .form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .activity-list-top {
+        flex-direction: column;
+    }
+}

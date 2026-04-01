@@ -1,0 +1,294 @@
+@using System.Globalization
+@implements IAsyncDisposable
+@inject IJSRuntime JS
+
+@if (Room is not null)
+{
+    var state = BuildState();
+
+    <main class="dashboard" @ref="_dashboardElement">
+        <section class="topbar">
+            <div class="clock-card">
+                <div class="clock-room">@Room.Name</div>
+                <div class="clock-time">@CurrentTime.ToString("HH:mm:ss", CultureInfo.CurrentCulture)</div>
+                <div class="clock-date">@CurrentTime.ToString("dddd, d MMMM yyyy", CultureInfo.CurrentCulture)</div>
+            </div>
+
+            @if (state.LaterActivities.Count > 0)
+            {
+                <aside class="timeline-overlay">
+                    <div class="timeline-label">Later Today</div>
+                    <div class="timeline-list">
+                        @foreach (var activity in state.LaterActivities)
+                        {
+                            <div class="timeline-item">
+                                <div class="timeline-time">@activity.Start</div>
+                                <div class="timeline-title">@activity.Title</div>
+                            </div>
+                        }
+                    </div>
+                </aside>
+            }
+        </section>
+
+        @if (!string.IsNullOrWhiteSpace(state.SeatingAlertMessage))
+        {
+            <section class="seating-alert">
+                <div class="seating-marquee">
+                    <div class="seating-text">@state.SeatingAlertMessage</div>
+                    <div class="seating-text" aria-hidden="true">@state.SeatingAlertMessage</div>
+                </div>
+            </section>
+        }
+
+        <section class="panels @(state.ShowNextPanel ? string.Empty : "single-card")">
+            <article class="activity-card @state.PrimaryCardClass">
+                <div class="activity-header">
+                    <div class="label">@state.PrimaryLabel</div>
+                </div>
+
+                <h2 class="activity-name">
+                    <span class="activity-name-text">
+                        @if (state.PrimaryActivity is not null)
+                        {
+                            @state.PrimaryActivity.Title
+                        }
+                        else
+                        {
+                            <span>No current activity</span>
+                        }
+                    </span>
+                </h2>
+
+                <div class="activity-meta">
+                    @if (state.PrimaryActivity is not null)
+                    {
+                        @if (state.PrimaryHasCountdown)
+                        {
+                            <div class="countdown">@FormatEndsIn(state.PrimaryActivity)</div>
+                        }
+
+                        @foreach (var item in BuildMetaItems(state.PrimaryActivity))
+                        {
+                            <div class="meta-row">
+                                <div class="meta-key">@item.Key</div>
+                                <div class="meta-value">@item.Value</div>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="empty-state">@state.CurrentEmptyMessage</div>
+                    }
+                </div>
+            </article>
+
+            @if (state.ShowNextPanel)
+            {
+                <article class="activity-card next">
+                    <div class="activity-header">
+                        <div class="label">Next Activity</div>
+                    </div>
+
+                    <h2 class="activity-name">
+                        <span class="activity-name-text">
+                            @if (state.NextActivity is not null)
+                            {
+                                @state.NextActivity.Title
+                            }
+                            else
+                            {
+                                <span>No upcoming activity</span>
+                            }
+                        </span>
+                    </h2>
+
+                    <div class="activity-meta">
+                        @if (state.NextActivity is not null)
+                        {
+                            @foreach (var item in BuildMetaItems(state.NextActivity))
+                            {
+                                <div class="meta-row">
+                                    <div class="meta-key">@item.Key</div>
+                                    <div class="meta-value">@item.Value</div>
+                                </div>
+                            }
+                        }
+                        else
+                        {
+                            <div class="empty-state">No additional activities are scheduled after this.</div>
+                        }
+                    </div>
+                </article>
+            }
+        </section>
+    </main>
+}
+
+@code {
+    [Parameter]
+    public ScheduleRoom? Room { get; set; }
+
+    [Parameter]
+    public DateTime CurrentTime { get; set; } = DateTime.Now;
+
+    private ElementReference _dashboardElement;
+    private IJSObjectReference? _module;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (Room is null)
+        {
+            return;
+        }
+
+        _module ??= await JS.InvokeAsync<IJSObjectReference>("import", "./Components/Shared/RoomBoard.razor.js");
+        await _module.InvokeVoidAsync("initialize", _dashboardElement);
+        await _module.InvokeVoidAsync("refresh", _dashboardElement);
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_module is null)
+        {
+            return;
+        }
+
+        try
+        {
+            await _module.InvokeVoidAsync("dispose", _dashboardElement);
+            await _module.DisposeAsync();
+        }
+        catch (JSDisconnectedException)
+        {
+        }
+    }
+
+    private RoomBoardState BuildState()
+    {
+        var sortedActivities = ScheduleRules.SortActivities(Room?.Activities ?? []);
+        var nowTime = TimeOnly.FromDateTime(CurrentTime);
+
+        ScheduleActivity? currentActivity = null;
+        ScheduleActivity? nextActivity = null;
+
+        foreach (var activity in sortedActivities)
+        {
+            if (!ScheduleRules.TryParseTime(activity.Start, out var startTime) ||
+                !ScheduleRules.TryParseTime(activity.End, out var endTime))
+            {
+                continue;
+            }
+
+            if (nowTime >= startTime && nowTime < endTime)
+            {
+                currentActivity = activity;
+                continue;
+            }
+
+            if (nextActivity is null && startTime > nowTime)
+            {
+                nextActivity = activity;
+            }
+        }
+
+        var laterActivities = nextActivity is null
+            ? []
+            : sortedActivities
+                .SkipWhile(activity => activity.Id != nextActivity.Id)
+                .Skip(1)
+                .ToList();
+
+        var showUpcomingAsPrimary = currentActivity is null && nextActivity is not null;
+        var primaryActivity = currentActivity ?? nextActivity;
+        var primaryLabel = showUpcomingAsPrimary ? "Next Activity" : "Current Activity";
+        var primaryCardClass = showUpcomingAsPrimary ? "upcoming-main" : "current";
+        var currentEmptyMessage = nextActivity is not null
+            ? "No activity is in progress right now."
+            : "There are no more scheduled activities for today.";
+        var seatingAlertMessage = GetSeatingAlertMessage(nextActivity, nowTime);
+
+        return new RoomBoardState(
+            CurrentActivity: currentActivity,
+            NextActivity: nextActivity,
+            LaterActivities: laterActivities,
+            PrimaryActivity: primaryActivity,
+            PrimaryLabel: primaryLabel,
+            PrimaryCardClass: primaryCardClass,
+            PrimaryHasCountdown: currentActivity is not null,
+            ShowNextPanel: currentActivity is not null,
+            CurrentEmptyMessage: currentEmptyMessage,
+            SeatingAlertMessage: seatingAlertMessage);
+    }
+
+    private static IReadOnlyList<MetaItem> BuildMetaItems(ScheduleActivity activity) =>
+    [
+        new("Start", activity.Start),
+        new("End", activity.End),
+        new("Personnel", activity.Personnel),
+        new("Location", activity.Location)
+    ];
+
+    private string FormatEndsIn(ScheduleActivity activity)
+    {
+        if (!ScheduleRules.TryParseTime(activity.End, out var endTime))
+        {
+            return string.Empty;
+        }
+
+        var diff = endTime - TimeOnly.FromDateTime(CurrentTime);
+        if (diff <= TimeSpan.Zero)
+        {
+            return "Ending now";
+        }
+
+        return $"Ends in {FormatDuration(diff)}";
+    }
+
+    private string GetSeatingAlertMessage(ScheduleActivity? nextActivity, TimeOnly nowTime)
+    {
+        if (nextActivity is null ||
+            string.IsNullOrWhiteSpace(nextActivity.Location) ||
+            !ScheduleRules.TryParseTime(nextActivity.Start, out var nextStart))
+        {
+            return string.Empty;
+        }
+
+        var minutesUntilStart = (nextStart - nowTime).TotalMinutes;
+        if (minutesUntilStart <= 0 || minutesUntilStart > 30)
+        {
+            return string.Empty;
+        }
+
+        var seatBy = nextStart.Add(TimeSpan.FromMinutes(-5));
+        return $"Please be seated by {seatBy:HH:mm} for {nextActivity.Title}";
+    }
+
+    private static string FormatDuration(TimeSpan duration)
+    {
+        var totalMinutes = Math.Max(0, (int)Math.Floor(duration.TotalMinutes));
+        var hours = totalMinutes / 60;
+        var remainingMinutes = totalMinutes % 60;
+
+        if (hours > 0 && remainingMinutes > 0)
+        {
+            return $"{hours}h {remainingMinutes}m";
+        }
+
+        return hours > 0 ? $"{hours}h" : $"{remainingMinutes}m";
+    }
+
+    private readonly record struct MetaItem(string Key, string Value);
+
+    private sealed record RoomBoardState(
+        ScheduleActivity? CurrentActivity,
+        ScheduleActivity? NextActivity,
+        IReadOnlyList<ScheduleActivity> LaterActivities,
+        ScheduleActivity? PrimaryActivity,
+        string PrimaryLabel,
+        string PrimaryCardClass,
+        bool PrimaryHasCountdown,
+        bool ShowNextPanel,
+        string CurrentEmptyMessage,
+        string SeatingAlertMessage);
+}

@@ -1,0 +1,556 @@
+@page "/rooms/{RoomId}/edit"
+@using System.Text.Json
+@implements IDisposable
+@inject NavigationManager Navigation
+@inject RoomStore RoomStore
+
+<PageTitle>@(_room is null ? "Room Editor" : $"{_room.Name} Editor")</PageTitle>
+
+<section class="editor-page">
+    @if (_room is null)
+    {
+        <div class="page-error">
+            <a class="back-link" href="/">Back to rooms</a>
+            <h1>Room not found</h1>
+            <p>The room may have been deleted while this editor was open.</p>
+        </div>
+    }
+    else
+    {
+        <header class="editor-header">
+            <div class="editor-header-copy">
+                <a class="back-link" href="/">All rooms</a>
+                <h1>@_room.Name</h1>
+                <p>
+                    Manage the schedule here while the signboard stays open on another device. Submitted changes
+                    sync live to every open display/editor connected to this room.
+                </p>
+            </div>
+
+            <div class="editor-header-actions">
+                <a class="primary-link" href="@DisplayPath" target="_blank" rel="noreferrer">Open Signboard</a>
+                <a class="secondary-link" href="/">Room Directory</a>
+            </div>
+        </header>
+
+        <div class="editor-banner-grid">
+            <section class="editor-panel">
+                <div class="panel-heading">
+                    <div>
+                        <p class="panel-eyebrow">Room Settings</p>
+                        <h2>Identity</h2>
+                    </div>
+
+                    <span class="sync-pill">Live sync active</span>
+                </div>
+
+                <form class="room-name-form" @onsubmit="SaveRoomNameAsync" @onsubmit:preventDefault="true">
+                    <label class="field-stack">
+                        <span class="field-label">Room Name</span>
+                        <input
+                            class="text-input"
+                            type="text"
+                            maxlength="80"
+                            @bind="_roomName"
+                            @bind:event="oninput" />
+                    </label>
+
+                    <div class="form-actions">
+                        <button class="primary-button" type="submit">Save Room Name</button>
+                        <button class="secondary-button" type="button" @onclick="ReloadRoomAsync">Reload Room</button>
+                    </div>
+                </form>
+
+                @if (!string.IsNullOrWhiteSpace(_roomNameError))
+                {
+                    <p class="form-error">@_roomNameError</p>
+                }
+
+                @if (!string.IsNullOrWhiteSpace(_statusMessage))
+                {
+                    <p class="form-hint">@_statusMessage</p>
+                }
+            </section>
+
+            <section class="editor-panel">
+                <div class="panel-heading">
+                    <div>
+                        <p class="panel-eyebrow">Links</p>
+                        <h2>Room URLs</h2>
+                    </div>
+                </div>
+
+                <div class="link-list">
+                    <div class="link-item">
+                        <span class="field-label">Display</span>
+                        <code>@DisplayUrl</code>
+                    </div>
+                    <div class="link-item">
+                        <span class="field-label">Editor</span>
+                        <code>@EditorUrl</code>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <div class="editor-layout">
+            <section class="editor-panel">
+                <div class="panel-heading">
+                    <div>
+                        <p class="panel-eyebrow">Schedule</p>
+                        <h2>Activities</h2>
+                    </div>
+
+                    <button class="secondary-button" type="button" @onclick="PrepareNewActivityForm">New Activity</button>
+                </div>
+
+                @if (SortedActivities.Count == 0)
+                {
+                    <div class="empty-editor-state">
+                        No activities yet. Create one from the form to the right.
+                    </div>
+                }
+                else
+                {
+                    <div class="activity-list">
+                        @foreach (var activity in SortedActivities)
+                        {
+                            <article class="activity-list-item @(activity.Id == _editingActivityId ? "active" : string.Empty)">
+                                <div class="activity-list-top">
+                                    <div>
+                                        <h3>@activity.Title</h3>
+                                        <p class="activity-list-time">@activity.Start to @activity.End</p>
+                                    </div>
+
+                                    <div class="mini-actions">
+                                        <button class="mini-button" type="button" @onclick="() => EditActivity(activity.Id)">Edit</button>
+                                        <button class="mini-button danger" type="button" @onclick="() => RemoveActivityAsync(activity.Id)">Remove</button>
+                                    </div>
+                                </div>
+
+                                <p class="activity-list-meta">@activity.Personnel | @activity.Location</p>
+                            </article>
+                        }
+                    </div>
+                }
+            </section>
+
+            <section class="editor-panel">
+                <div class="panel-heading">
+                    <div>
+                        <p class="panel-eyebrow">@(_isJsonEditorOpen ? "Bulk Editing" : "Selected Activity")</p>
+                        <h2>@(_isJsonEditorOpen ? "Events JSON" : (_editingActivityId is null ? "New Activity" : "Edit Activity"))</h2>
+                    </div>
+
+                    <button class="secondary-button" type="button" @onclick="ToggleJsonEditor">
+                        @(_isJsonEditorOpen ? "Back to Form" : "Edit JSON")
+                    </button>
+                </div>
+
+                @if (!_isJsonEditorOpen)
+                {
+                    <form class="activity-form" @onsubmit="SaveActivityAsync" @onsubmit:preventDefault="true">
+                        <div class="form-grid">
+                            <label class="field-stack field-full">
+                                <span class="field-label">Title</span>
+                                <input class="text-input" type="text" required maxlength="120" @bind="_activityForm.Title" />
+                            </label>
+
+                            <label class="field-stack">
+                                <span class="field-label">Start</span>
+                                <input class="text-input" type="text" inputmode="numeric" placeholder="HH:mm" required @bind="_activityForm.Start" />
+                            </label>
+
+                            <label class="field-stack">
+                                <span class="field-label">End</span>
+                                <input class="text-input" type="text" inputmode="numeric" placeholder="HH:mm" required @bind="_activityForm.End" />
+                            </label>
+
+                            <label class="field-stack field-full">
+                                <span class="field-label">Personnel</span>
+                                <input class="text-input" type="text" required maxlength="200" @bind="_activityForm.Personnel" />
+                            </label>
+
+                            <label class="field-stack field-full">
+                                <span class="field-label">Location</span>
+                                <input class="text-input" type="text" required maxlength="120" @bind="_activityForm.Location" />
+                            </label>
+                        </div>
+
+                        <div class="form-actions">
+                            <button class="secondary-button" type="button" @onclick="PrepareNewActivityForm">Clear</button>
+                            <button class="primary-button" type="submit">@SaveButtonLabel</button>
+                        </div>
+                    </form>
+
+                    @if (!string.IsNullOrWhiteSpace(_formError))
+                    {
+                        <p class="form-error">@_formError</p>
+                    }
+                }
+                else
+                {
+                    <p class="json-help">
+                        Edit the full schedule array directly. Each item must contain <code>title</code>, <code>start</code>,
+                        <code>end</code>, <code>personnel</code>, and <code>location</code>. Times must use <code>HH:mm</code>.
+                    </p>
+
+                    <textarea class="json-editor" spellcheck="false" @bind="_jsonEditorText"></textarea>
+
+                    @if (!string.IsNullOrWhiteSpace(_jsonError))
+                    {
+                        <p class="form-error">@_jsonError</p>
+                    }
+
+                    <div class="form-actions">
+                        <button class="secondary-button" type="button" @onclick="ResetJsonEditor">Reset JSON</button>
+                        <button class="primary-button" type="button" @onclick="ApplyJsonAsync">Apply JSON</button>
+                    </div>
+                }
+            </section>
+        </div>
+    }
+</section>
+
+@code {
+    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web)
+    {
+        PropertyNameCaseInsensitive = true,
+        WriteIndented = true
+    };
+
+    [Parameter]
+    public string RoomId { get; set; } = string.Empty;
+
+    private ScheduleRoom? _room;
+    private string _roomName = string.Empty;
+    private string? _statusMessage;
+    private string? _roomNameError;
+    private string? _formError;
+    private string? _jsonError;
+    private string? _editingActivityId;
+    private bool _isJsonEditorOpen;
+    private string _jsonEditorText = "[]";
+    private ActivityFormModel _activityForm = new();
+
+    private IReadOnlyList<ScheduleActivity> SortedActivities =>
+        ScheduleRules.SortActivities(_room?.Activities ?? []);
+
+    private string SaveButtonLabel => _editingActivityId is null ? "Add Activity" : "Save Changes";
+
+    private string DisplayPath => $"/rooms/{RoomId}";
+
+    private string DisplayUrl => Navigation.ToAbsoluteUri(DisplayPath).ToString();
+
+    private string EditorUrl => Navigation.ToAbsoluteUri($"/rooms/{RoomId}/edit").ToString();
+
+    protected override void OnInitialized()
+    {
+        RoomStore.Changed += HandleRoomStoreChanged;
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await ReloadRoomAsync();
+    }
+
+    public void Dispose()
+    {
+        RoomStore.Changed -= HandleRoomStoreChanged;
+    }
+
+    private async Task ReloadRoomAsync()
+    {
+        _room = await RoomStore.GetRoomAsync(RoomId);
+        _roomNameError = null;
+
+        if (_room is null)
+        {
+            _roomName = string.Empty;
+            return;
+        }
+
+        _roomName = _room.Name;
+        RefreshJsonEditorText();
+
+        if (_editingActivityId is not null)
+        {
+            var activity = _room.Activities.FirstOrDefault(item => item.Id == _editingActivityId);
+            if (activity is null)
+            {
+                PrepareNewActivityForm();
+            }
+            else
+            {
+                FillActivityForm(activity);
+            }
+        }
+        else if (string.IsNullOrWhiteSpace(_activityForm.Start))
+        {
+            PrepareNewActivityForm();
+        }
+    }
+
+    private async Task SaveRoomNameAsync()
+    {
+        _roomNameError = null;
+
+        if (string.IsNullOrWhiteSpace(_roomName))
+        {
+            _roomNameError = "Room name is required.";
+            return;
+        }
+
+        var savedRoom = await RoomStore.UpdateRoomNameAsync(RoomId, _roomName);
+        if (savedRoom is null)
+        {
+            _roomNameError = "The room could not be found.";
+            return;
+        }
+
+        _room = savedRoom;
+        _roomName = savedRoom.Name;
+        _statusMessage = $"Room name saved at {DateTime.Now:HH:mm:ss}.";
+    }
+
+    private void PrepareNewActivityForm()
+    {
+        var suggestedStart = ScheduleRules.GetSuggestedStartTime(_room?.Activities ?? []);
+
+        _editingActivityId = null;
+        _formError = null;
+        _activityForm = new ActivityFormModel
+        {
+            Title = string.Empty,
+            Start = suggestedStart,
+            End = ScheduleRules.GetSuggestedEndTime(suggestedStart),
+            Personnel = string.Empty,
+            Location = string.Empty
+        };
+    }
+
+    private void EditActivity(string activityId)
+    {
+        if (_room is null)
+        {
+            return;
+        }
+
+        var activity = _room.Activities.FirstOrDefault(item => item.Id == activityId);
+        if (activity is null)
+        {
+            return;
+        }
+
+        _editingActivityId = activity.Id;
+        _formError = null;
+        FillActivityForm(activity);
+    }
+
+    private async Task SaveActivityAsync()
+    {
+        if (_room is null)
+        {
+            return;
+        }
+
+        _formError = null;
+
+        var draft = new ScheduleActivity
+        {
+            Id = _editingActivityId ?? Guid.NewGuid().ToString("N"),
+            Title = _activityForm.Title,
+            Start = _activityForm.Start,
+            End = _activityForm.End,
+            Personnel = _activityForm.Personnel,
+            Location = _activityForm.Location
+        };
+
+        var singleValidation = ScheduleRules.ValidateActivities([draft]);
+        if (!singleValidation.Ok)
+        {
+            _formError = singleValidation.Error;
+            return;
+        }
+
+        var normalizedDraft = singleValidation.Normalized[0];
+        var nextActivities = _room.Activities.Select(activity => activity.Clone()).ToList();
+        var existingIndex = nextActivities.FindIndex(activity => activity.Id == normalizedDraft.Id);
+
+        if (existingIndex >= 0)
+        {
+            nextActivities[existingIndex] = normalizedDraft;
+        }
+        else
+        {
+            nextActivities.Add(normalizedDraft);
+        }
+
+        try
+        {
+            var savedRoom = await RoomStore.SaveScheduleAsync(RoomId, nextActivities);
+            if (savedRoom is null)
+            {
+                _formError = "The room could not be found.";
+                return;
+            }
+
+            _room = savedRoom;
+            _statusMessage = $"Schedule saved at {DateTime.Now:HH:mm:ss}.";
+            RefreshJsonEditorText();
+
+            if (_editingActivityId is null)
+            {
+                PrepareNewActivityForm();
+            }
+            else
+            {
+                EditActivity(normalizedDraft.Id);
+            }
+        }
+        catch (InvalidOperationException exception)
+        {
+            _formError = exception.Message;
+        }
+    }
+
+    private async Task RemoveActivityAsync(string activityId)
+    {
+        if (_room is null)
+        {
+            return;
+        }
+
+        var nextActivities = _room.Activities
+            .Where(activity => activity.Id != activityId)
+            .Select(activity => activity.Clone())
+            .ToList();
+
+        try
+        {
+            var savedRoom = await RoomStore.SaveScheduleAsync(RoomId, nextActivities);
+            if (savedRoom is null)
+            {
+                _formError = "The room could not be found.";
+                return;
+            }
+
+            _room = savedRoom;
+            _statusMessage = $"Activity removed at {DateTime.Now:HH:mm:ss}.";
+            RefreshJsonEditorText();
+
+            if (_editingActivityId == activityId)
+            {
+                PrepareNewActivityForm();
+            }
+        }
+        catch (InvalidOperationException exception)
+        {
+            _formError = exception.Message;
+        }
+    }
+
+    private void ToggleJsonEditor()
+    {
+        _isJsonEditorOpen = !_isJsonEditorOpen;
+        _jsonError = null;
+
+        if (_isJsonEditorOpen)
+        {
+            RefreshJsonEditorText();
+        }
+    }
+
+    private void ResetJsonEditor()
+    {
+        _jsonError = null;
+        RefreshJsonEditorText();
+    }
+
+    private async Task ApplyJsonAsync()
+    {
+        _jsonError = null;
+
+        List<ScheduleActivity>? parsed;
+        try
+        {
+            parsed = JsonSerializer.Deserialize<List<ScheduleActivity>>(_jsonEditorText, JsonOptions);
+        }
+        catch (JsonException)
+        {
+            _jsonError = "JSON is not valid.";
+            return;
+        }
+
+        var validation = ScheduleRules.ValidateActivities(parsed);
+        if (!validation.Ok)
+        {
+            _jsonError = validation.Error;
+            return;
+        }
+
+        try
+        {
+            var savedRoom = await RoomStore.SaveScheduleAsync(RoomId, validation.Normalized);
+            if (savedRoom is null)
+            {
+                _jsonError = "The room could not be found.";
+                return;
+            }
+
+            _room = savedRoom;
+            _isJsonEditorOpen = false;
+            _statusMessage = $"JSON applied at {DateTime.Now:HH:mm:ss}.";
+            PrepareNewActivityForm();
+            RefreshJsonEditorText();
+        }
+        catch (InvalidOperationException exception)
+        {
+            _jsonError = exception.Message;
+        }
+    }
+
+    private void FillActivityForm(ScheduleActivity activity)
+    {
+        _activityForm = new ActivityFormModel
+        {
+            Title = activity.Title,
+            Start = activity.Start,
+            End = activity.End,
+            Personnel = activity.Personnel,
+            Location = activity.Location
+        };
+    }
+
+    private void RefreshJsonEditorText()
+    {
+        _jsonEditorText = JsonSerializer.Serialize(_room?.Activities ?? [], JsonOptions);
+    }
+
+    private void HandleRoomStoreChanged(object? sender, RoomChangedEventArgs e)
+    {
+        if (!string.Equals(e.RoomId, RoomId, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        _ = InvokeAsync(async () =>
+        {
+            await ReloadRoomAsync();
+            StateHasChanged();
+        });
+    }
+
+    private sealed class ActivityFormModel
+    {
+        public string Title { get; set; } = string.Empty;
+
+        public string Start { get; set; } = string.Empty;
+
+        public string End { get; set; } = string.Empty;
+
+        public string Personnel { get; set; } = string.Empty;
+
+        public string Location { get; set; } = string.Empty;
+    }
+}

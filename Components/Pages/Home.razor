@@ -1,0 +1,176 @@
+﻿@page "/"
+@implements IDisposable
+@inject NavigationManager Navigation
+@inject RoomStore RoomStore
+
+<PageTitle>Room Directory</PageTitle>
+
+<section class="room-directory">
+    <header class="directory-hero">
+        <div class="hero-copy">
+            <p class="directory-eyebrow">Blazor Signboards</p>
+            <h1 class="directory-title">Room Directory</h1>
+            <p class="directory-description">
+                Create a room, open its signboard on one display, and edit the schedule from a different device.
+                Submitted changes sync live to every open page for that room.
+            </p>
+        </div>
+
+        <aside class="directory-status-card">
+            <div class="status-label">Realtime Strategy</div>
+            <div class="status-value">Interactive server circuits</div>
+            <p class="status-note">
+                The current build pushes room changes through the server-side state store, so open displays update
+                without a manual refresh.
+            </p>
+        </aside>
+    </header>
+
+    <section class="directory-panel create-panel">
+        <div class="section-heading">
+            <div>
+                <p class="section-eyebrow">Create</p>
+                <h2>New Room</h2>
+            </div>
+        </div>
+
+        <form class="create-room-form" @onsubmit="CreateRoomAsync" @onsubmit:preventDefault="true">
+            <label class="field-stack">
+                <span class="field-label">Room Name</span>
+                <input
+                    class="text-input"
+                    type="text"
+                    maxlength="80"
+                    placeholder="Example: Briefing Room B"
+                    @bind="_newRoomName"
+                    @bind:event="oninput" />
+            </label>
+
+            <div class="form-actions">
+                <button class="primary-button" type="submit">Create Room</button>
+            </div>
+        </form>
+
+        @if (!string.IsNullOrWhiteSpace(_createError))
+        {
+            <p class="form-error">@_createError</p>
+        }
+    </section>
+
+    <section class="directory-panel">
+        <div class="section-heading">
+            <div>
+                <p class="section-eyebrow">Rooms</p>
+                <h2>Available Signboards</h2>
+            </div>
+
+            <span class="room-count-pill">@_rooms.Count room@(_rooms.Count == 1 ? string.Empty : "s")</span>
+        </div>
+
+        @if (_rooms.Count == 0)
+        {
+            <div class="empty-room-state">
+                No rooms exist yet. Create one above to start a new schedule/signboard pair.
+            </div>
+        }
+        else
+        {
+            <div class="room-grid">
+                @foreach (var room in _rooms)
+                {
+                    <article class="room-card">
+                        <div class="room-card-header">
+                            <div>
+                                <p class="room-card-eyebrow">Room</p>
+                                <h3>@room.Name</h3>
+                            </div>
+
+                            <span class="room-schedule-count">
+                                @room.Activities.Count @GetActivityLabel(room.Activities.Count)
+                            </span>
+                        </div>
+
+                        <p class="room-card-meta">
+                            Last updated @room.UpdatedUtc.ToLocalTime().ToString("g")
+                        </p>
+
+                        <div class="room-card-links">
+                            <a class="primary-link" href="@GetDisplayPath(room.Id)" target="_blank" rel="noreferrer">
+                                Open Signboard
+                            </a>
+                            <a class="secondary-link" href="@GetEditorPath(room.Id)" target="_blank" rel="noreferrer">
+                                Open Editor
+                            </a>
+                        </div>
+
+                        <div class="room-card-footer">
+                            <code>@Navigation.ToAbsoluteUri(GetDisplayPath(room.Id))</code>
+                            <button class="danger-link" type="button" @onclick="() => DeleteRoomAsync(room.Id)">
+                                Delete
+                            </button>
+                        </div>
+                    </article>
+                }
+            </div>
+        }
+    </section>
+</section>
+
+@code {
+    private IReadOnlyList<ScheduleRoom> _rooms = [];
+    private string _newRoomName = string.Empty;
+    private string? _createError;
+
+    protected override async Task OnInitializedAsync()
+    {
+        RoomStore.Changed += HandleRoomStoreChanged;
+        await LoadRoomsAsync();
+    }
+
+    public void Dispose()
+    {
+        RoomStore.Changed -= HandleRoomStoreChanged;
+    }
+
+    private async Task LoadRoomsAsync()
+    {
+        _rooms = await RoomStore.GetRoomsAsync();
+    }
+
+    private async Task CreateRoomAsync()
+    {
+        _createError = null;
+
+        if (string.IsNullOrWhiteSpace(_newRoomName))
+        {
+            _createError = "Room name is required.";
+            return;
+        }
+
+        await RoomStore.CreateRoomAsync(_newRoomName);
+        _newRoomName = string.Empty;
+        await LoadRoomsAsync();
+    }
+
+    private async Task DeleteRoomAsync(string roomId)
+    {
+        await RoomStore.DeleteRoomAsync(roomId);
+        await LoadRoomsAsync();
+    }
+
+    private void HandleRoomStoreChanged(object? sender, RoomChangedEventArgs e)
+    {
+        _ = InvokeAsync(async () =>
+        {
+            await LoadRoomsAsync();
+            StateHasChanged();
+        });
+    }
+
+    private static string GetActivityLabel(int count) =>
+        count == 1 ? "activity" : "activities";
+
+    private static string GetDisplayPath(string roomId) => $"/rooms/{roomId}";
+
+    private static string GetEditorPath(string roomId) => $"/rooms/{roomId}/edit";
+}

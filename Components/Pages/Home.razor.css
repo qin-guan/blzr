@@ -1,0 +1,215 @@
+.room-directory {
+    min-height: 100vh;
+    padding: clamp(1.5rem, 3vw, 2.5rem);
+    display: grid;
+    gap: 1.2rem;
+}
+
+.directory-hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1.3fr) minmax(18rem, 0.7fr);
+    gap: 1rem;
+}
+
+.hero-copy,
+.directory-status-card,
+.directory-panel {
+    border-radius: 24px;
+    background: rgba(255, 255, 255, 0.88);
+    border: 1px solid rgba(19, 32, 38, 0.08);
+    box-shadow: var(--shadow);
+}
+
+.hero-copy {
+    padding: clamp(1.75rem, 3vw, 2.6rem);
+    background:
+        radial-gradient(circle at top right, rgba(11, 105, 139, 0.18), transparent 33%),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(248, 251, 252, 0.94));
+}
+
+.directory-eyebrow,
+.section-eyebrow,
+.room-card-eyebrow {
+    margin: 0 0 0.45rem;
+    font-size: 0.88rem;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    font-weight: 760;
+    color: var(--muted);
+}
+
+.directory-title {
+    margin: 0;
+    font-size: clamp(2.6rem, 5vw, 4.4rem);
+    line-height: 0.95;
+    letter-spacing: -0.04em;
+}
+
+.directory-description {
+    margin: 1rem 0 0;
+    max-width: 45rem;
+    font-size: 1.1rem;
+    line-height: 1.6;
+    color: #41535d;
+}
+
+.directory-status-card {
+    padding: 1.5rem;
+    display: grid;
+    align-content: start;
+    gap: 0.6rem;
+}
+
+.status-label {
+    font-size: 0.88rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-weight: 760;
+    color: var(--muted);
+}
+
+.status-value {
+    font-size: 1.5rem;
+    line-height: 1.1;
+    font-weight: 760;
+    color: var(--text);
+}
+
+.status-note {
+    margin: 0;
+    color: #50616a;
+    line-height: 1.55;
+}
+
+.directory-panel {
+    padding: 1.4rem;
+    display: grid;
+    gap: 1rem;
+}
+
+.section-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: start;
+    gap: 1rem;
+}
+
+.section-heading h2,
+.room-card h3 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.05;
+}
+
+.room-count-pill,
+.room-schedule-count {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    padding: 0.45rem 0.8rem;
+    background: #e7f0f4;
+    color: #2b5667;
+    font-size: 0.92rem;
+    font-weight: 700;
+}
+
+.create-room-form {
+    display: grid;
+    gap: 1rem;
+    max-width: 28rem;
+}
+
+.field-stack {
+    display: grid;
+    gap: 0.45rem;
+}
+
+.field-label {
+    font-size: 0.9rem;
+    font-weight: 720;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+}
+
+.form-actions {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.empty-room-state {
+    border-radius: 18px;
+    border: 1px dashed rgba(80, 97, 106, 0.3);
+    padding: 1.25rem;
+    color: #51616a;
+    background: rgba(248, 251, 252, 0.8);
+}
+
+.room-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+    gap: 1rem;
+}
+
+.room-card {
+    border-radius: 20px;
+    border: 1px solid rgba(19, 32, 38, 0.08);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(246, 250, 252, 0.94));
+    padding: 1.2rem;
+    display: grid;
+    gap: 1rem;
+}
+
+.room-card-header {
+    display: flex;
+    align-items: start;
+    justify-content: space-between;
+    gap: 0.8rem;
+}
+
+.room-card-meta {
+    margin: 0;
+    color: #53636c;
+    font-size: 0.95rem;
+}
+
+.room-card-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.room-card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.8rem;
+}
+
+.room-card-footer code {
+    display: block;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: #4d626c;
+    font-size: 0.86rem;
+}
+
+@media (max-width: 900px) {
+    .directory-hero {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 640px) {
+    .room-directory {
+        padding: 1rem;
+    }
+
+    .room-card-footer {
+        flex-direction: column;
+        align-items: start;
+    }
+}

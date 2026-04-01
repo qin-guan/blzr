@@ -1,0 +1,93 @@
+@page "/rooms/{RoomId}"
+@implements IDisposable
+@inject RoomStore RoomStore
+
+<PageTitle>@(_room is null ? "Room Not Found" : _room.Name)</PageTitle>
+
+@if (_room is null)
+{
+    <section class="page-error">
+        <a class="back-link" href="/">Back to rooms</a>
+        <h1>Room not found</h1>
+        <p>The signboard you requested does not exist or has been deleted.</p>
+    </section>
+}
+else
+{
+    <RoomBoard Room="_room" CurrentTime="_currentTime" />
+}
+
+@code {
+    [Parameter]
+    public string RoomId { get; set; } = string.Empty;
+
+    private ScheduleRoom? _room;
+    private DateTime _currentTime = DateTime.Now;
+    private PeriodicTimer? _clockTimer;
+    private CancellationTokenSource? _clockCancellation;
+
+    protected override void OnInitialized()
+    {
+        RoomStore.Changed += HandleRoomStoreChanged;
+        StartClock();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await LoadRoomAsync();
+    }
+
+    public void Dispose()
+    {
+        RoomStore.Changed -= HandleRoomStoreChanged;
+        _clockCancellation?.Cancel();
+        _clockCancellation?.Dispose();
+        _clockTimer?.Dispose();
+    }
+
+    private async Task LoadRoomAsync()
+    {
+        _room = await RoomStore.GetRoomAsync(RoomId);
+    }
+
+    private void StartClock()
+    {
+        _clockCancellation = new CancellationTokenSource();
+        _clockTimer = new PeriodicTimer(TimeSpan.FromSeconds(1));
+        _ = RunClockAsync(_clockCancellation.Token);
+    }
+
+    private async Task RunClockAsync(CancellationToken cancellationToken)
+    {
+        if (_clockTimer is null)
+        {
+            return;
+        }
+
+        try
+        {
+            while (await _clockTimer.WaitForNextTickAsync(cancellationToken))
+            {
+                _currentTime = DateTime.Now;
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+        }
+    }
+
+    private void HandleRoomStoreChanged(object? sender, RoomChangedEventArgs e)
+    {
+        if (!string.Equals(e.RoomId, RoomId, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        _ = InvokeAsync(async () =>
+        {
+            await LoadRoomAsync();
+            StateHasChanged();
+        });
+    }
+}

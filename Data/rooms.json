@@ -1,0 +1,120 @@
+[
+  {
+    "id": "operations-room",
+    "name": "Ops",
+    "activities": [
+      {
+        "id": "activity-1",
+        "title": "Morning B",
+        "start": "08:30",
+        "end": "09:00",
+        "personnel": "Alex Tan, Priya Nair",
+        "location": "Operations Room"
+      },
+      {
+        "id": "activity-2",
+        "title": "Client Walkthr",
+        "start": "09:15",
+        "end": "10:30",
+        "personnel": "Jamie Lee, Chen Wei, Maria Santos",
+        "location": "Conference Hall A"
+      },
+      {
+        "id": "activity-3",
+        "title": "Systems Check",
+        "start": "11:00",
+        "end": "12:00",
+        "personnel": "Facilities Team",
+        "location": "Control Center"
+      },
+      {
+        "id": "activity-4",
+        "title": "Afternoon Review",
+        "start": "14:00",
+        "end": "15:00",
+        "personnel": "Leadership Group",
+        "location": "Boardroom"
+      }
+    ],
+    "updatedUtc": "2026-04-01T02:21:22.8413938+00:00"
+  },
+  {
+    "id": "a0126e9ea7504066a4ee0edd633469f0",
+    "name": "asdasd",
+    "activities": [
+      {
+        "id": "activity-1",
+        "title": "Large Group BA with Coaches",
+        "start": "08:30",
+        "end": "08:45",
+        "personnel": "BC\u002BCOS, All Cells",
+        "location": "Bde Trng Room"
+      },
+      {
+        "id": "activity-2",
+        "title": "Transition to RCP Action Reaction",
+        "start": "08:45",
+        "end": "09:00",
+        "personnel": "All Cells",
+        "location": "Bde Trng Room"
+      },
+      {
+        "id": "activity-3",
+        "title": "CAOS Presentation for RCP Action Reaction, RCP Poss",
+        "start": "09:00",
+        "end": "11:30",
+        "personnel": "BC\u002BCOS, All Cells",
+        "location": "Bde Trng Room"
+      },
+      {
+        "id": "activity-4",
+        "title": "\uD83D\uDE0BLunch / BC Engagement with BESS \u0026 BAC",
+        "start": "11:30",
+        "end": "12:30",
+        "personnel": "All Cells",
+        "location": "-"
+      },
+      {
+        "id": "activity-5",
+        "title": "CAOS Prep for Time and Space Poss and Action Reaction",
+        "start": "12:30",
+        "end": "15:00",
+        "personnel": "All Cells",
+        "location": "Bde Trng Room"
+      },
+      {
+        "id": "activity-6",
+        "title": "CAOS Presentation for T\u0026S Poss and Action Reaction",
+        "start": "15:00",
+        "end": "17:00",
+        "personnel": "BC\u002BCOS, All Cells",
+        "location": "Bde Trng Room"
+      },
+      {
+        "id": "activity-7",
+        "title": "Cell DAR with Coaches",
+        "start": "17:00",
+        "end": "17:15",
+        "personnel": "All Cells",
+        "location": "Bde Trng Room"
+      },
+      {
+        "id": "activity-8",
+        "title": "Formulation of ECA and Consolidation",
+        "start": "17:15",
+        "end": "18:45",
+        "personnel": "All Cells",
+        "location": "Bde Trng Room"
+      },
+      {
+        "id": "activity-9",
+        "title": "Cell Admin DAR and Consolidation (Internal)",
+        "start": "18:45",
+        "end": "19:00",
+        "personnel": "All Cells",
+        "location": "Bde Trng Room"
+      }
+    ],
+    "updatedUtc": "2026-04-01T03:06:14.0370949+00:00"
+  }
+]

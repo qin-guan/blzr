@@ -1,0 +1,16 @@
+<Router AppAssembly="typeof(Program).Assembly">
+    <Found Context="routeData">
+        <RouteView RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)" />
+        <FocusOnNavigate RouteData="routeData" Selector="h1" />
+    </Found>
+    <NotFound>
+        <PageTitle>Not Found</PageTitle>
+        <LayoutView Layout="typeof(Layout.MainLayout)">
+            <section class="page-error">
+                <a class="back-link" href="/">Back to rooms</a>
+                <h1>Nothing at this address</h1>
+                <p>Use the room directory to open a display or editor route that exists.</p>
+            </section>
+        </LayoutView>
+    </NotFound>
+</Router>
