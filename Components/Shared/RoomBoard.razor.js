@@ -15,10 +15,13 @@ export function initialize(root) {
 
         state = {
             resizeHandler,
-            resizeObserver
+            resizeObserver,
+            clockTimeoutId: null,
+            clockIntervalId: null
         };
 
         boardState.set(root, state);
+        startClock(root, state);
     }
 
     refresh(root);
@@ -40,7 +43,40 @@ export function dispose(root) {
 
     state.resizeObserver.disconnect();
     window.removeEventListener("resize", state.resizeHandler);
+    clearTimeout(state.clockTimeoutId);
+    clearInterval(state.clockIntervalId);
     boardState.delete(root);
+}
+
+function startClock(root, state) {
+    const timeEl = root.querySelector(".clock-time");
+    const dateEl = root.querySelector(".clock-date");
+
+    if (!timeEl && !dateEl) {
+        return;
+    }
+
+    const locale = navigator.language;
+    const timeFormat = new Intl.DateTimeFormat(locale, { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false });
+    const dateFormat = new Intl.DateTimeFormat(locale, { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+
+    function tick() {
+        const now = new Date();
+        if (timeEl) {
+            timeEl.textContent = timeFormat.format(now);
+        }
+        if (dateEl) {
+            dateEl.textContent = dateFormat.format(now);
+        }
+    }
+
+    tick();
+
+    const msUntilNextSecond = 1000 - (Date.now() % 1000);
+    state.clockTimeoutId = setTimeout(() => {
+        tick();
+        state.clockIntervalId = setInterval(tick, 1000);
+    }, msUntilNextSecond);
 }
 
 function fitBoard(root) {
