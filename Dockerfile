@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/dotnet/nightly/sdk:11.0-preview.2 AS build
+FROM mcr.microsoft.com/dotnet/nightly/sdk:11.0-preview AS build
 WORKDIR /src
 
 COPY ["global.json", "./"]
@@ -8,7 +8,7 @@ RUN dotnet restore "blzr.csproj"
 COPY . .
 RUN dotnet publish "blzr.csproj" -c Release -o /app/publish /p:UseAppHost=false
 
-FROM mcr.microsoft.com/dotnet/nightly/aspnet:11.0-preview.2 AS final
+FROM mcr.microsoft.com/dotnet/nightly/aspnet:11.0-preview AS final
 WORKDIR /app
 
 ENV ASPNETCORE_URLS=http://+:8080
