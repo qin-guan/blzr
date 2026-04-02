@@ -1,7 +1,6 @@
 FROM mcr.microsoft.com/dotnet/nightly/sdk:11.0-preview AS build
 WORKDIR /src
 
-COPY ["global.json", "./"]
 COPY ["blzr.csproj", "./"]
 RUN dotnet restore "blzr.csproj"
 
